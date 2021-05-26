@@ -6,37 +6,49 @@ class SQLighter:
         self.connection = sqlite3.connect(database)
         self.cursor = self.connection.cursor()
 
-    def select_all(self):
-        """ Получаем все строки """
-        with self.connection:
-            return self.cursor.execute('SELECT * FROM answers').fetchall()
-
-#   Получение ответа по токену бота id пользователя и номеру вопроса
-    def select_triple(self, token, usernum, questnum):
-        entities = (usernum, questnum, token)
-        with self.connection:
-            return self.cursor.execute('SELECT * FROM answers WHERE user_id = ? AND quest_id = ? AND token = ?', entities).fetchall()
+    def close(self):
+        """ Закрываем текущее соединение с БД """
+        self.connection.close()
+      
 
 #   Нахождение вопроса для бота по номеру вопроса
-    def select_question(self, token, questnum):
+    def select_question_by_token_number(self, token, questnum):
         entities = (questnum, token)
         with self.connection:
             return self.cursor.execute('SELECT * FROM questions WHERE number_of_quest = ? AND token = ?', entities).fetchall()[0]
 
+#   Подсчет количества вопросов в боте
+    def select_question_by_token(self, token):
+        """ Считаем количество строк """
+        with self.connection:
+            return  self.cursor.execute('SELECT quest FROM questions WHERE token = ?', (token,)).fetchall()
+
+#   Подсчет количества вопросов в боте
+    def count_question_by_token(self, token):
+        """ Считаем количество строк """
+        with self.connection:
+            result =  self.cursor.execute('SELECT * FROM questions WHERE token = ?', (token,)).fetchall()
+            return len(result)
+
+    def insert_question(self, token, question, questionNumber):
+        entities = (token, question, questionNumber)
+        with self.connection:
+            self.cursor.execute('INSERT INTO questions (token, quest, number_of_quest) VALUES (?, ?, ?)', entities)
+            self.connection.commit()
+
+
+#   Получение ответа по токену бота id пользователя и номеру вопроса
+    def select_answer_by_token_userNumber_questionNumber(self, token, usernum, questnum):
+        entities = (usernum, questnum, token)
+        with self.connection:
+            return self.cursor.execute('SELECT * FROM answers WHERE user_id = ? AND quest_id = ? AND token = ?', entities).fetchall()
+
 #   Подсчет количества ответов пользователя
-    def count_quest_rows_user(self, token,  usernum):
+    def count_answer_by_token_userNumber(self, token,  usernum):
         """ Считаем количество строк """
         entities = (usernum, token)
         with self.connection:
             result =  self.cursor.execute('SELECT * FROM answers WHERE user_id = ? AND token = ?', entities).fetchall()
-            return len(result)
-
-#   Подсчет количества вопросов в боте
-    def count_quest_rows_bot(self, token):
-        """ Считаем количество строк """
-        entities = (token)
-        with self.connection:
-            result =  self.cursor.execute('SELECT * FROM questions WHERE token = ?', (token,)).fetchall()
             return len(result)
 
 #   Запись ответа
@@ -59,7 +71,41 @@ class SQLighter:
         with self.connection:
             self.cursor.execute('DELETE FROM answers WHERE user_id = ? AND token = ?', entities)
             self.connection.commit()
-            
-    def close(self):
-        """ Закрываем текущее соединение с БД """
-        self.connection.close()
+
+
+#   Возвращает комбинации Вопрос - Ответ
+    def select_bot_answers(self, token):
+        with self.connection:
+            return self.cursor.execute('SELECT questions.quest, answers.answer FROM answers INNER JOIN questions ON answers.quest_id = questions.number_of_quest AND answers.token = questions.token AND questions.token = ?', (token,)).fetchall()
+
+
+
+    def add_bot(self, token):
+        with self.connection:
+            self.cursor.execute('INSERT INTO bots (token) VALUES (?)', (token,))    
+            self.connection.commit()
+
+    def delete_bot(self, token):
+        with self.connection:
+            self.cursor.execute('DELETE FROM bots WHERE token = ?', (token,))
+            self.cursor.execute('DELETE FROM questions WHERE token = ?', (token,))
+            self.cursor.execute('DELETE FROM answers WHERE token = ?', (token,))
+            self.connection.commit()
+
+    def bot_on(self, token):
+        with self.connection:
+            self.cursor.execute('UPDATE bots SET status = 1 WHERE token = ?', (token,))
+            self.connection.commit()
+
+    def bot_off(self, token):
+        with self.connection:
+            self.cursor.execute('UPDATE bots SET status = 0 WHERE token = ?', (token,))
+            self.connection.commit()
+
+    def bot_status(self, token):
+        with self.connection:
+            return self.cursor.execute('SELECT status FROM bots WHERE token = ?', (token,)).fetchall()[0][0]
+
+    def bot_list(self):
+        with self.connection:
+            return self.cursor.execute('SELECT * FROM bots').fetchall()
