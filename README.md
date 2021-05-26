@@ -14,12 +14,9 @@ https://www.python.org/downloads/windows/
       `sudo apt update`  
       `sudo apt install python3.6`
 * qt(для linux)  
-
-            sudo apt install qt5-default  
+`sudo apt install qt5-default`  
 * PyQt5  
-
-            pip install PyQt5  
+`pip install PyQt5`  
 * python-telegram-bot
-
-            pip install python-telegram-bot  
-Для запуска программы вводим python mainqt.py (для Linux python3 mainqt.py)
+`pip install python-telegram-bot`  
+Для запуска программы вводим `python mainqt.py` (для Linux `python3 mainqt.py`)
